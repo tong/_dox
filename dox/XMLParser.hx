@@ -2,7 +2,9 @@ package dox;
 
 #if js
 
+import js.Dom ;
 import haxe.rtti.CType;
+using dox.XMLUtil;
 
 /**
 	Custom (faaaast) XML 2 haxe.rtti parser
@@ -15,363 +17,242 @@ class XMLParser {
 	
 	public function new() {
 		root = new Array();
+		curplatform = "js"; //TODO
 	}
-	
-			/*
-	public function sort( ?l ) {
-		if( l == null ) l = root;
-		l.sort(function(e1,e2) {
-			var n1 = switch e1 {
-				case TPackage(p,_,_) : " "+p;
-				default: TypeApi.typeInfos(e1).path;
-			};
-			var n2 = switch e2 {
-				case TPackage(p,_,_) : " "+p;
-				default: TypeApi.typeInfos(e2).path;
-			};
-			if( n1 > n2 )
-				return 1;
-			return -1;
-		});
-		for( x in l )
-			switch( x ) {
-			case TPackage(_,_,l): sort(l);
-			case TClassdecl(c):
-				//c.fields = sortFields(c.fields);
-				//c.statics = sortFields(c.statics);
-/* 
-			case TEnumdecl(e):
-			case TTypedecl(_):
-			}
-	}
-	
-	function sortFields(fl) {
-		var a = Lambda.array(fl);
-		a.sort(function(f1 : ClassField,f2 : ClassField) {
-			if( f1 == null )trace( f1 );
-			//var v1 = TypeApi.isVar(f1.type);
-			var v2 = TypeApi.isVar(f2.type);
-			if( v1 && !v2 )
-				return -1;
-			if( v2 && !v1 )
-				return 1;
-			if( f1.name == "new" )
-				return -1;
-			if( f2.name == "new" )
-				return 1;
-			if( f1.name > f2.name )
-				return 1;
-			return -1;
-			trace(v1+" :  "+v2);
-			return -1;
-		});
-		return Lambda.list(a);
-	}
-			*/
 	
 	public function parseString( s : String ) {
-		 parseXML( new DOMParser().parseFromString( s, "text/xml" ).documentElement );
+		 parseXML( new DOMParser().parseFromString( s, "text/xml" ) );
 	}
 	
 	public function parseXML( x : Dynamic ) {
 		root = new Array<TypeTree>();
-		parseElement( x.childNodes.item(0), root );
+		var r = x.childNodes.item(0);
+		parseElement( r, root );
 	}
 	
 	public function parseElement( x : Dynamic, root : TypeRoot ) {
 		var i = 0;
 		while( i < x.childNodes.length ) {
-			var tree : TypeTree = null;
-			var i1 = x.childNodes.item(i);
-			switch( i1.nodeType ) {
-			case Node.ELEMENT_NODE :
-				switch( i1.nodeName ) {
-
-				case "typedef" :
-					var t : Typedef = {
-						types : null,
-						type : null,
-						platforms : null,
-						path : Std.string( i1.attributes.getNamedItem( "path" ).value ),
-						params : null,
-						module : getStringAttribute( i1, "module" ),
-						isPrivate : getBoolAttribute( i1, "private" ),
-						doc : null
-					};
-					//trace(t.module);
-					//var a : Dynamic = i1.attributes.getNamedItem("module");
-					//if( a != null ) t.module = Std.string( a.value );
-					var j = 0;
-					while( j < i1.childNodes.length ) {
-						var i2 = i1.childNodes.item(j);
-						switch( i2.nodeType ) {
-						case Node.ELEMENT_NODE :
-							//trace(i2.nodeName);
-							switch( i2.nodeName ) {
-							case "haxe_doc" : t.doc = i2.textContent;
-							case "a" :
-								//trace("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-								var k = 0;
-								while( k < i2.childNodes.length ) {
-									var i3 = i2.childNodes.item(k);
-									switch( i3.nodeType ) {
-									case Node.ELEMENT_NODE :
-										//trace( i3.nodeName );
-										//mkRights();
-										//trace( mkRights( getStringAttribute( i3, "set" ) ) );
-										//t.types.set( i3.nodeName,  );
-									}
-									k++;
-								}
-								
-							case "c" :
-							}
-						}
-						j++;
-					}
-					//tree = TypeTree.TTypedecl(t);
-					//root.push( TypeTree.TTypedecl(t) );
-					//updatePAckages();
-					merge( TypeTree.TTypedecl(t) );
-					
-				case "class" :								
-					var c : Classdef = {
-						tdynamic : null,
-						superClass : null,
-						statics : new List<ClassField>(),
-						platforms : null,
-						path : Std.string( i1.attributes.getNamedItem( "path" ).value ),
-						params : i1.attributes.getNamedItem( "params" ).value,
-						module : null,//i1.attributes.getNamedItem( "module" ).value,
-						isPrivate : null,
-						isInterface : false,
-						isExtern : false,
-						interfaces : null,
-						fields : new List<ClassField>(),
-						doc : null,
-					};
-					
-					//TODO platforms
-					
-					//var a : Dynamic = i1.attributes.getNamedItem("module");
-					//if( a != null ) c.module = Std.string( a.value );
-					
-					var a : Dynamic = i1.attributes.getNamedItem("module");
-					if( a != null ) c.module = Std.string( a.value );
-					
-					//var a : Dynamic = i1.attributes.getNamedItem("private");
-					//if( a != null && a.value == "1" ) c.isPrivate = true;
-					c.isPrivate = getBoolAttribute( i1, "private" );
-					
-					var a : Dynamic = i1.attributes.getNamedItem("interface");
-					if( a != null && a.value == "1" ) c.isInterface = true;
-					
-					//var a : Dynamic = i1.attributes.getNamedItem("extern");
-					//if( a != null && a.value == "1" ) c.isExtern = true;
-					c.isExtern = getBoolAttribute( i1, "extern" );
-					
-					//trace(c.module+":"+c.isPrivate);
-					
-					// PARSE FIELDS
-					var j = 0;
-					while( j < i1.childNodes.length ) {
-						var i2 = i1.childNodes.item(j);
-						switch( i2.nodeType ) {
-						case Node.ELEMENT_NODE :
-	//{ type : haxe.rtti.CType, set : haxe.rtti.Rights, platforms : haxe.rtti.Platforms, params : haxe.rtti.TypeParams,
-	//name : String, isPublic : Bool, isOverride : Bool, get : haxe.rtti.Rights, doc : String }
-							switch( i2.nodeName ) {
-							case "extends" :
-								var path = i2.attributes.getNamedItem("path").value;
-								//var params = ,,
-								c.superClass = { path : path, params : null }; //TODO params
-							case "haxe_doc" :
-								c.doc = i2.textContent;
-							default :
-								var cf : ClassField = {
-									type : null,
-									set : null,
-									platforms : new List<String>(),
-									params : new Array<String>(),
-									name : i2.nodeName,
-									isPublic :  false,
-									isOverride : false,
-									get : null,
-									doc : null
-								};
-								var _static = false;
-								if( i2.attributes != null ) {
-									var s = i2.attributes.getNamedItem("static");
-									if( s != null && s.value == "1" ) _static = true;
-									var a = i2.attributes.getNamedItem("get");
-									if( a != null ) cf.get = mkRights( a.value );
-									var a = i2.attributes.getNamedItem("set");
-									if( a != null ) cf.set = mkRights( a.value );
-									var a = i2.attributes.getNamedItem("public");
-									if( a != null && a.value == "1" ) cf.isPublic = true;
-									var s = i2.attributes.getNamedItem( "override" );
-									if( s != null && s.value == "1" ) cf.isOverride = true;
-								}
-								
-								var k = 0;
-								while( k < i2.childNodes.length ) {
-									var i3 = i2.childNodes.item(k);
-									switch( i3.nodeType ) {
-									case Node.ELEMENT_NODE :
-										switch( i3.nodeName ) {
-										case "haxe_doc" :
-											cf.doc = i3.textContent;
-										case "c" :
-											//trace( i3.attributes.getNamedItem("path").value );
-											cf.params.push( i3.attributes.getNamedItem("path").value);
-										case "f" :
-											var param_names = i3.attributes.getNamedItem("a").value.split(":");
-											var param_names_index = 0;
-											//trace(param_names);
-											var l = 0;
-											while( l < i3.childNodes.length ) {
-												var i4 = i3.childNodes.item(l);
-												switch( i4.nodeName ) {
-												case "c" :
-													var param = param_names[param_names_index];
-													param_names_index++;
-													var s = ( param == null ) ? "" : param+":";
-													s += i4.attributes.getNamedItem( "path" ).value;
-													cf.params.push(s);
-												case "e" :
-													cf.params.push( i4.attributes.getNamedItem( "path" ).value );
-												}
-												l++;
-											}
-											if( cf.name == "isSpace" ) {
-												//trace(cf.params);
-											}
-										}
-										//default :
-										//	trace("YOOOOOOOOOOOOOOOOOOOOOE "+i3.nodeName );
-									}
-									k++;
-								}
-								
-								if( _static ) {
-									c.statics.add( cf );
-								} else {
-									c.fields.add( cf );
-								}
-							}
-						}
-						j++;
-					}
-					//tree = TypeTree.TClassdecl(c);
-					//root.push( TypeTree.TClassdecl(c) );
-					//trace(c);
-					merge( TypeTree.TClassdecl(c) );
-					
-				case "enum" :
-					//TODO
-					var e : Enumdef = {
-						platforms : null,
-						path : Std.string( i1.attributes.getNamedItem( "path" ).value ),
-						params : null,
-						module : null,
-						isPrivate : false,
-						isExtern : false,
-						doc : null,
-						constructors : new List()
-					};
-					
-					var a : Dynamic = i1.attributes.getNamedItem("module");
-					if( a != null ) e.module = Std.string( a.value );
-					
-					var a : Dynamic = i1.attributes.getNamedItem("private");
-					if( a != null && a.value == "1" ) e.isPrivate = true;
-					
-					var a : Dynamic = i1.attributes.getNamedItem("extern");
-					if( a != null && a.value == "1" ) e.isExtern = true;
-					
-					var j = 0;
-					while( j < i1.childNodes.length ) {
-						var i2 = i1.childNodes.item(j);
-						switch( i2.nodeType ) {
-						case Node.ELEMENT_NODE :
-							//trace(i2);
-							switch( i2.nodeName ) {
-							case "haxe_doc" :
-								e.doc = i2.textContent;
-							default :
-								//TODO
-								var ef : EnumField  = {
-									platforms : null,
-									name : i2.nodeName,
-									doc : null,
-									args : null
-								};
-								e.constructors.add( ef );
-							}
-						}
-						j++;
-					}
-					//tree = TypeTree.TEnumdecl(e);
-					//root.push( TypeTree.TEnumdecl(e) );
-					merge( TypeTree.TEnumdecl(e) );
-				}
-			//case Node.TEXT_NODE :
+			var e = x.childNodes.item(i);
+			if( e.nodeType == Node.ELEMENT_NODE ) {
+				merge( processElement(e) );
 			}
-			
-		//	updatePackages();
-			
-			//root.push( tree );
 			i++;
 		}
 	}
 	
-	function xerror( c ) : Dynamic {
-		return throw "Invalid "+c.nodeName;
+	public function processElement( x ) {
+		return switch( x.nodeName ) {
+		case "class": TClassdecl(xclass(x));
+		case "enum": TEnumdecl(xenum(x));
+		case "typedef": TTypedecl(xtypedef(x));
+		default: xerror(x);
+		}
+	}
+	
+	function xclass( x : Dynamic ) : Classdef {
+		var csuper = null;
+		var doc = null;
+		var tdynamic = null;
+		var interfaces = new List();
+		var fields = new List();
+		var statics = new List();
+		for( i in 0...x.childNodes.length ) {
+			var c : Dynamic = x.childNodes.item(i);
+			if( c.nodeType != Node.ELEMENT_NODE )
+				continue;
+			switch( c.nodeName ) {
+			case "haxe_doc": doc = c.firstChild.nodeValue;
+			case "extends": csuper = xpath(c);
+			case "implements": interfaces.add(xpath(c));
+			case "haxe_dynamic":
+				//trace(c.firstChild);
+				//TODO correct ?
+				for( i in 0...c.childNodes.length ) {
+					var e = c.childNodes.item(i);
+					if( e.nodeType == Node.ELEMENT_NODE ) {
+						//trace("xtype "+e.nodeName );
+						tdynamic = xtype( e ); //xtype(new Fast(c.x.firstElement()));
+					}
+					
+				}
+			default :
+				//trace( c.has("static") );
+				if( c.has("static") )
+					statics.add(xclassfield(c));
+				else
+					fields.add(xclassfield(c));
+			}
+		}
+		var r = {
+			path : mkPath( x.att("path") ),
+			module : if( x.has("module") ) mkPath(x.att("module")) else null,
+			doc : doc,
+			isPrivate : x.has("private"),
+			isExtern : x.has("extern"),
+			isInterface : x.has("interface"),
+			params : mkTypeParams(x.att("params")),
+			superClass : csuper,
+			interfaces : interfaces,
+			fields : fields,
+			statics : statics,
+			tdynamic : tdynamic,
+			platforms : defplat(),
+		};
+		//trace(r);
+		return r;
+	}
+	
+	function xclassfield( x : Dynamic ) : ClassField {
+		var f = null;
+		var doc = null;
+		for( i in 0...x.childNodes.length ) {
+			var e = x.childNodes.item(i);
+			if( e.nodeType != Node.ELEMENT_NODE )
+				continue;
+			if( f == null ) {
+				f = e;
+			} else {
+				switch( e.nodeName ) {
+				case "haxe_doc":
+					if( e.firstChild != null ) doc = e.firstChild.nodeValue;
+					//doc = e.firstChild.nodeValue;
+				default: xerror(e);
+				}
+			}
+		}
+		var t = xtype(f);
+		return {
+			name : x.nodeName,
+			type : t,
+			isPublic : x.has("public"),
+			isOverride : x.has("override"),
+			doc : doc, 
+			get : if( x.has("get") ) mkRights( x.att("get") ) else RNormal,
+			set : if( x.has("set") ) mkRights( x.att("set") ) else RNormal,
+			params : if( x.has("params") ) mkTypeParams(x.att("params")) else null,
+			platforms : defplat(),
+		};
+	}
+	
+	function xenum( x : Dynamic ) : Enumdef {
+		var cl = new List();
+		var doc = null;
+		for( i in 0...x.childNodes.length ) {
+			var c = x.childNodes.item(i);
+			if( c.nodeType != Node.ELEMENT_NODE )
+				continue;
+			if( c.nodeName == "haxe_doc" ) {
+				if( c.firstChild != null ) {
+					doc = c.firstChild.nodeValue;
+				}
+			} else {
+				cl.add( xenumfield(c) );
+			}
+		}
+		return {
+			path : mkPath( x.att("path") ),
+			module : if( x.has("module") ) mkPath( x.att("module")) else null,
+			doc : doc,
+			isPrivate : x.has("private"),
+			isExtern : x.has("extern"),
+			params : mkTypeParams( x.att("params") ),
+			constructors : cl,
+			platforms : defplat(),
+		};
+	}
+	
+	function xenumfield( x : Dynamic ) : EnumField {
+		var xdoc = null;
+		var args = null;
+		if( x.has("a") ) {
+			var names = x.att("a").split(":");
+			var elts = x.childNodes;
+			var i = 0;
+			args = new List();
+			var i = 0;
+			var j = 0;
+			while( i < names.length ) {
+				var e = elts.item(j);
+				if( e.nodeType != Node.ELEMENT_NODE ) {
+					j++;
+					continue;
+				}
+				var c = names[i];
+				var opt = false;
+				if( c.charAt(0) == "?" ) {
+					opt = true;
+					c = c.substr(1);
+				}
+				args.add({
+					name : c,
+					opt : opt,
+					t : xtype( e ),
+				});
+				i++;
+			}
+		}
+		return {
+			name : x.nodeName,
+			args : args,
+			doc : if( xdoc == null ) null else xdoc.firstChild.nodeValue, //if( xdoc == null ) null else new Fast(xdoc).innerData,
+			platforms : defplat(),
+		};
+	}
+	
+	function xerror( c : Dynamic ) : Dynamic {
+		return throw "Invalid "+c;
 	}
 	
 	function xtypedef( x : Dynamic ) : Typedef {
 		var doc = null;
 		var t = null;
-		var i = 0;
-		while( i < x.childNodes.length ) {
+		for( i in 0...x.childNodes ) {
 			var c = x.childNodes.item(i);
-			if( c.name == "haxe_doc" )
-				doc = c.innerData;
-			else
+			if( c.nodeType != Node.ELEMENT_NODE )
+				continue;
+			if( c.nodeName == "haxe_doc" ) {
+				if( c.firstChild != null ) {
+					doc = c.firstChild.nodeValue;
+				} 
+			} else {
 				t = xtype(c);
-			i++;
+			}
 		}
 		var types = new Hash();
 		if( curplatform != null )
 			types.set(curplatform,t);
 		return {
-			path : mkPath(x.att.path),
-			module : if( x.has.module ) mkPath(x.att.module) else null,
+			path : mkPath(x.att("path")),
+			module : if( x.has("module") ) mkPath(x.att("module")) else null,
 			doc : doc,
-			isPrivate : x.x.exists("private"),
-			params : mkTypeParams(x.att.params),
+			isPrivate : x.has("private"),
+			params : mkTypeParams(x.att("params")),
 			type : t,
 			types : types,
 			platforms : defplat(),
 		};
+		return null;
 	}
 	
 	function xtype( x : Dynamic ) : CType {
-		
-		if( x.nodeName == null ) {
-			trace("NNNNNNNNNNNNNNNNNNNNNNNNNNN");
-			return null;
-		}
-		//trace( x.nodeName);	
-		
 		return switch( x.nodeName ) {
-		case "f" :
+		case "unknown":
+			CUnknown;
+		case "e":
+			CEnum(mkPath(x.att("path")),xtypeparams(x));
+		case "c":
+			CClass(mkPath(x.att("path")),xtypeparams(x));
+		case "t":
+			CTypedef(mkPath(x.att("path")),xtypeparams(x));
+		case "f":
 			var args = new List();
-			var aname = x.att.a.split(":");
+			var aname = x.att("a").split(":");
 			var eargs = aname.iterator();
-			var i = 0;
-			while( i < x.childNodes.length ) {
-				var e = x.childNodes.item( i );
+			for( i in 0...x.childNodes.length ) {
+				var e = x.childNodes.item(i);
+				if( e.nodeType != Node.ELEMENT_NODE )
+					continue;
 				var opt = false;
 				var a = eargs.next();
 				if( a == null )
@@ -385,28 +266,42 @@ class XMLParser {
 					opt : opt,
 					t : xtype(e),
 				});
-				i++;
 			}
 			var ret = args.last();
 			args.remove(ret);
-			CFunction(args,ret.t);
+			CFunction( args, ret.t );
 		case "a":
 			var fields = new List();
-			var i = 0;
-			while( i < x.childNodes.length ) {
+			for( i in 0...x.childNodes ) {
 				var f = x.childNodes.item(i);
+				if( f.nodeType != Node.ELEMENT_NODE )
+					continue;
+//				trace("TODO");
 				fields.add({
-					name : f.name,
-					t : xtype( f.firstElement() ) //xtype( new Fast(f.x.firstElement() ) ),
+					name : f.nodeName,
+					t : xtype( f ),
 				});
-				i++;
+				/*
+				fields.add({
+					name : f.nodeName,
+					t : xtype( new Fast(f.x.firstElement())),
+				});
+				*/
 			}
 			CAnonymous(fields);
 		case "d":
+//			trace("TODO");
 			var t = null;
-			var tx = x.x.firstElement();
+			var tx : Dynamic = null;
+			for( i in 0...x.childNodes ) {
+				var e = x.childNodes.item(i);
+				if( e.nodeType != Node.ELEMENT_NODE )
+					continue;
+				tx = e;
+				break;
+			}
 			if( tx != null )
-				t = xtype( tx.firstElement() );  //xtype(new Fast(tx));
+				t = xtype(tx);
 			CDynamic(t);
 		default:
 			xerror(x);
@@ -414,29 +309,72 @@ class XMLParser {
 		return null;
 	}
 	
-	function mkPath( p : String ) : Path {
+	function xpath( x : Dynamic ) : PathParams {
+		var path = mkPath( x.att("path") );
+		var params = new List();
+		for( i in 0...x.childNodes.length ) {
+			var c = x.childNodes.item(i);
+			if( c.nodeType != Node.ELEMENT_NODE ) continue;
+			params.add( xtype( c ) );
+		}
+		return {
+			path : path,
+			params : params,
+		};
+	}
+	
+	function xtypeparams( x : Dynamic ) : List<CType> {
+		var p = new List();
+		for( i in 0...x.childNodes.length ) {
+			var c = x.childNodes.item(i);
+			if( c.nodeType != Node.ELEMENT_NODE ) continue;
+			p.add(xtype(c));
+		}
+		return p;
+	}
+	
+	inline function mkPath( p : String ) : Path {
 		return p;
 	}
 	
 	function mkTypeParams( p : String ) : TypeParams {
-		var pl = p.split(":");
-		if( pl[0] == "" )
+		var r = p.split(":");
+		if( r[0] == "" )
 			return new Array();
-		return pl;
+		return r;
+	}
+	
+	function mkRights( r : String ) : Rights {
+		return switch( r ) {
+		case "null": RNo;
+		case "method": RMethod;
+		case "dynamic": RDynamic;
+		case "inline": RInline;
+		default: RCall(r);
+		}
+	}
+	
+	function defplat() {
+		var l = new List();
+		if( curplatform != null )
+			l.add(curplatform);
+		return l;
 	}
 	
 	function merge( t : TypeTree ) {
-		//TODO
-		var cur = root;
+		if( t == null ) {
+			//TODO
+			//trace("NULLNULLNULLNULLNULLNULLNULLNULLNULLNULLNULLNULL");
+			return;
+		}
 		var inf = TypeApi.typeInfos(t);
-		//trace( inf );
 		var pack = inf.path.split(".");
-		pack.pop();
-		//trace( pack );
+		var cur = root;
 		var curpack = new Array();
+		pack.pop();
 		for( p in pack ) {
 			var found = false;
-			for( pk in cur ) {
+			for( pk in cur )
 				switch( pk ) {
 				case TPackage(pname,_,subs):
 					if( pname == p ) {
@@ -446,7 +384,6 @@ class XMLParser {
 					}
 				default:
 				}
-			}
 			curpack.push(p);
 			if( !found ) {
 				var pk = new Array();
@@ -461,6 +398,7 @@ class XMLParser {
 				tinf = TypeApi.typeInfos(ct)
 			catch( e : Dynamic )
 				continue;
+			// compare params ?
 			if( tinf.path == inf.path ) {
 				if( tinf.module == inf.module && tinf.doc == inf.doc && tinf.isPrivate == inf.isPrivate )
 					switch( ct ) {
@@ -494,6 +432,19 @@ class XMLParser {
 		cur.push(t);
 	}
 	
+	function mergeRights( f1 : ClassField, f2 : ClassField ) {
+		if( f1.get == RInline && f1.set == RNo && f2.get == RNormal && f2.set == RMethod ) {
+			f1.get = RNormal;
+			f1.set = RMethod;
+			return true;
+		}
+		return false;
+	}
+
+	function mergeFields( f : ClassField, f2 : ClassField ) {
+		return TypeApi.fieldEq(f,f2) || (f.name == f2.name && (mergeRights(f,f2) || mergeRights(f2,f)) && TypeApi.fieldEq(f,f2));
+	}
+
 	function mergeClasses( c : Classdef, c2 : Classdef ) {
 		// todo : compare supers & interfaces
 		if( c.isInterface != c2.isInterface )
@@ -529,7 +480,7 @@ class XMLParser {
 		}
 		return true;
 	}
-	
+
 	function mergeEnums( e : Enumdef, e2 : Enumdef ) {
 		if( e.isExtern != e2.isExtern )
 			return false;
@@ -549,55 +500,13 @@ class XMLParser {
 		}
 		return true;
 	}
-	
-	function mergeFields( f : ClassField, f2 : ClassField ) {
-		return TypeApi.fieldEq(f,f2) || (f.name == f2.name && (mergeRights(f,f2) || mergeRights(f2,f)) && TypeApi.fieldEq(f,f2));
-	}
-	
+
 	function mergeTypedefs( t : Typedef, t2 : Typedef ) {
 		if( curplatform == null )
 			return false;
 		t.platforms.add(curplatform);
 		t.types.set(curplatform,t2.type);
 		return true;
-	}
-	
-	function mergeRights( f1 : ClassField, f2 : ClassField ) {
-		if( f1.get == RInline && f1.set == RNo && f2.get == RNormal && f2.set == RMethod ) {
-			f1.get = RNormal;
-			f1.set = RMethod;
-			return true;
-		}
-		return false;
-	}
-	
-	//function geClassdef( x : Dynamic ) 
-	
-	function getStringAttribute( e : Dynamic, name : String ) {
-		var v = e.attributes.getNamedItem( name );
-		return ( v == null ) ? null : v.value;
-	}
-	
-	function getBoolAttribute( e : Dynamic, name : String ) {
-		var v = e.attributes.getNamedItem( name );
-		return ( v == null ) ? false : ( v.value == "1" );
-	}
-	
-	function mkRights( r : String ) : Rights {
-		return switch( r ) {
-		case "null": RNo;
-		case "method": RMethod;
-		case "dynamic": RDynamic;
-		case "inline": RInline;
-		default: RCall(r);
-		}
-	}
-	
-	function defplat() {
-		var l = new List();
-		if( curplatform != null )
-			l.add(curplatform);
-		return l;
 	}
 	
 }
