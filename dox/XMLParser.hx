@@ -207,7 +207,7 @@ class XMLParser {
 	function xtypedef( x : Dynamic ) : Typedef {
 		var doc = null;
 		var t = null;
-		for( i in 0...x.childNodes ) {
+		for( i in 0...x.childNodes.length ) {
 			var c = x.childNodes.item(i);
 			if( c.nodeType != Node.ELEMENT_NODE )
 				continue;
@@ -221,7 +221,7 @@ class XMLParser {
 		}
 		var types = new Hash();
 		if( curplatform != null )
-			types.set(curplatform,t);
+			types.set( curplatform, t );
 		return {
 			path : mkPath(x.att("path")),
 			module : if( x.has("module") ) mkPath(x.att("module")) else null,
