@@ -73,6 +73,17 @@ class XMLParser {
 	
 	
 	public function parseString( s : String ) {
+		/*
+		var worker = new Worker( "js/worker/testworker.js" );
+		worker.onmessage = function(e) {
+			var d = e.data;
+			trace(d);
+			trace(d.test);
+			trace(d.value);
+			
+		}
+		worker.postMessage( "hhii" );
+		*/
 		 parseXML( new DOMParser().parseFromString( s, "text/xml" ) );
 	}
 	
