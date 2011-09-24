@@ -1,4 +1,4 @@
-package dox;
+package dox.rtti;
 
 #if js
 
@@ -20,12 +20,61 @@ class XMLParser {
 		curplatform = "js"; //TODO
 	}
 	
+	
+	public function sort( ?l ) {
+		if( l == null ) l = root;
+		l.sort(function(e1,e2) {
+			var n1 = switch e1 {
+				case TPackage(p,_,_) : " "+p;
+				default: TypeApi.typeInfos(e1).path;
+			};
+			var n2 = switch e2 {
+				case TPackage(p,_,_) : " "+p;
+				default: TypeApi.typeInfos(e2).path;
+			};
+			if( n1 > n2 )
+				return 1;
+			return -1;
+		});
+		for( x in l )
+			switch( x ) {
+			case TPackage(_,_,l): sort(l);
+			case TClassdecl(c):
+				c.fields = sortFields(c.fields);
+				c.statics = sortFields(c.statics);
+			case TEnumdecl(e):
+			case TTypedecl(_):
+			}
+	}
+
+	function sortFields(fl) {
+		var a = Lambda.array(fl);
+		a.sort(function(f1 : ClassField,f2 : ClassField) {
+			var v1 = TypeApi.isVar(f1.type);
+			var v2 = TypeApi.isVar(f2.type);
+			if( v1 && !v2 )
+				return -1;
+			if( v2 && !v1 )
+				return 1;
+			if( f1.name == "new" )
+				return -1;
+			if( f2.name == "new" )
+				return 1;
+			if( f1.name > f2.name )
+				return 1;
+			return -1;
+		});
+		return Lambda.list(a);
+	}
+	
+	
+	
 	public function parseString( s : String ) {
 		 parseXML( new DOMParser().parseFromString( s, "text/xml" ) );
 	}
 	
 	public function parseXML( x : Dynamic ) {
-		root = new Array<TypeTree>();
+		//root = new Array<TypeTree>();
 		var r = x.childNodes.item(0);
 		parseElement( r, root );
 	}
@@ -166,7 +215,7 @@ class XMLParser {
 		var xdoc = null;
 		var args = null;
 		if( x.has("a") ) {
-			var names = x.att("a").split(":");
+			var names : Array<String> = x.att("a").split(":");
 			var elts = x.childNodes;
 			var i = 0;
 			args = new List();
@@ -192,6 +241,7 @@ class XMLParser {
 				i++;
 			}
 		}
+	//	trace(xdoc);
 		return {
 			name : x.nodeName,
 			args : args,
@@ -219,15 +269,16 @@ class XMLParser {
 				t = xtype(c);
 			}
 		}
+		//TODO wtf .. types semm not to be set correctly !
 		var types = new Hash();
 		if( curplatform != null )
 			types.set( curplatform, t );
 		return {
-			path : mkPath(x.att("path")),
+			path : mkPath( x.att("path") ),
 			module : if( x.has("module") ) mkPath(x.att("module")) else null,
 			doc : doc,
 			isPrivate : x.has("private"),
-			params : mkTypeParams(x.att("params")),
+			params : mkTypeParams( x.att("params") ),
 			type : t,
 			types : types,
 			platforms : defplat(),
