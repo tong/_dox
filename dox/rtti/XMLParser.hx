@@ -20,7 +20,10 @@ class XMLParser {
 		curplatform = "js"; //TODO
 	}
 	
-	
+	public inline function clear() {
+		root = new Array();
+	}
+		
 	public function sort( ?l ) {
 		if( l == null ) l = root;
 		l.sort(function(e1,e2) {
@@ -212,7 +215,19 @@ class XMLParser {
 	}
 	
 	function xenumfield( x : Dynamic ) : EnumField {
-		var xdoc = null;
+		var doc : String = null;
+		var i = 0;
+		while( i < x.childNodes.length ) {
+			var e = x.childNodes.item(i);
+			if( e.nodeType != Node.ELEMENT_NODE ) {
+				i++;
+				continue;
+			}
+			switch( e.nodeName ) {
+			case "haxe_doc" : doc = e.firstChild.nodeValue;
+			}
+			i++;
+		}
 		var args = null;
 		if( x.has("a") ) {
 			var names : Array<String> = x.att("a").split(":");
@@ -245,7 +260,7 @@ class XMLParser {
 		return {
 			name : x.nodeName,
 			args : args,
-			doc : if( xdoc == null ) null else xdoc.firstChild.nodeValue, //if( xdoc == null ) null else new Fast(xdoc).innerData,
+			doc : doc,
 			platforms : defplat(),
 		};
 	}
