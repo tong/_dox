@@ -4,7 +4,7 @@ package dox.rtti;
 
 import js.Dom ;
 import haxe.rtti.CType;
-using dox.XMLUtil;
+using dox.rtti.XMLUtil;
 
 /**
 	Custom (faaaast) XML 2 haxe.rtti parser

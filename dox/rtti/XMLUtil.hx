@@ -1,4 +1,4 @@
-package dox;
+package dox.rtti;
 
 class XMLUtil {
 	
