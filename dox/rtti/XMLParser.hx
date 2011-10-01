@@ -17,7 +17,7 @@ class XMLParser {
 	
 	public function new() {
 		root = new Array();
-		curplatform = "js"; //TODO
+		//curplatform = "js"; //TODO
 	}
 	
 	public inline function clear() {
@@ -70,9 +70,7 @@ class XMLParser {
 		return Lambda.list(a);
 	}
 	
-	
-	
-	public function parseString( s : String ) {
+	public function parseString( s : String, platform : String ) {
 		/*
 		var worker = new Worker( "js/worker/testworker.js" );
 		worker.onmessage = function(e) {
@@ -84,11 +82,12 @@ class XMLParser {
 		}
 		worker.postMessage( "hhii" );
 		*/
-		 parseXML( new DOMParser().parseFromString( s, "text/xml" ) );
+		 parseXML( new DOMParser().parseFromString( s, "text/xml" ), platform );
 	}
 	
-	public function parseXML( x : Dynamic ) {
+	public function parseXML( x : Dynamic, platform : String ) {
 		//root = new Array<TypeTree>();
+		curplatform = platform;
 		var r = x.childNodes.item(0);
 		parseElement( r, root );
 	}
@@ -438,12 +437,14 @@ class XMLParser {
 		return l;
 	}
 	
-	function merge( t : TypeTree ) {
+	public function merge( t : TypeTree ) {
+		/*
 		if( t == null ) {
 			//TODO
 			//trace("NULLNULLNULLNULLNULLNULLNULLNULLNULLNULLNULLNULL");
 			return;
 		}
+		*/
 		var inf = TypeApi.typeInfos(t);
 		var pack = inf.path.split(".");
 		var cur = root;
@@ -503,6 +504,7 @@ class XMLParser {
 					case TPackage(_,_,_):
 					}
 				// we already have a mapping, but which is incompatible
+				//trace( "Incompatibilities between "+tinf.path+" in "+tinf.platforms.join(",")+" and "+curplatform, "error" );
 				throw "Incompatibilities between "+tinf.path+" in "+tinf.platforms.join(",")+" and "+curplatform;
 			}
 		}
