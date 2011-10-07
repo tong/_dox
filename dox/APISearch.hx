@@ -4,8 +4,10 @@ import haxe.rtti.CType;
 
 class APISearch {
 	
-	var active : Bool;
+	public var active(default,null) : Bool;
+	
 	var term : String;
+	var platforms : Array<String>;
 	var traverser_packages : Array<TypeTree>;
 	var traverser : Array<TypeTree>;
 	
@@ -13,39 +15,37 @@ class APISearch {
 		active = false;
 	}
 	
-	public function run( term : String, root : TypeRoot, cb : Array<TypeTree>->Void ) {
+	public function run( term : String, root : TypeRoot, platforms : Array<String>, cb : TypeRoot->Void ) {
 		
-		//trace( "Searching: '"+term+"' ..." );
+		trace( "Searching: '"+term+"' ..."+platforms );
 		
 		this.term = term.toLowerCase();
+		this.platforms = platforms;
 		
-		active = true;
 		traverser_packages = new Array();
 		traverser = new Array();
+		active = true;
+		
 		searchTypes( root );
 		
 		//traverser.sort( sortTypeByAlphapbet );
 		traverser.sort( sortTypeBySearchTermPosition );
 		traverser_packages.sort( sortPackageBySearchTermPosition );
 		
-		// TODO search/sort is complete remove unused length from array ... (?)
-		//..
-		
-		// move full math to front
-		var i = 0;
 		var r = traverser.concat( traverser_packages );
+		
+		// move exact match to top
+		var i = 0;
 		for( tree in r ) {
-			switch(tree) {
-			case TPackage(name,full,subs) : if( full == term ) { r.unshift( r.splice( i, 1 )[0] ); }
-			case TTypedecl(t) : if( t.path == term ) { r.unshift( r.splice( i, 1 )[0] ); }
-			case TEnumdecl(e) : if( e.path == term ) { r.unshift( r.splice( i, 1 )[0] ); }
-			case TClassdecl(c) : if( c.path == term ) { r.unshift( r.splice( i, 1 )[0] ); }
+			switch( tree ) {
+			case TPackage(name,full,subs) : if( full == term ) { r.unshift( r.splice( i, 1 )[0] ); break; }
+			case TTypedecl(t) : if( t.path == term ) { r.unshift( r.splice( i, 1 )[0] ); break; }
+			case TEnumdecl(e) : if( e.path == term ) { r.unshift( r.splice( i, 1 )[0] ); break; }
+			case TClassdecl(c) : if( c.path == term ) { r.unshift( r.splice( i, 1 )[0] ); break; }
 			}
 			i++;
 		}
 		
-		//cb( traverser.concat( traverser_packages ) );
-		//cb( traverser_packages.concat( traverser ) );
 		cb( r );
 	}
 	
@@ -58,17 +58,39 @@ class APISearch {
 			return;
 		for( tree in root ) {
 			switch( tree ) {
-			case TPackage(name,full,subs) :
-				if( compareStrings( full, term ) ) traverser_packages.push( tree );
+			case TPackage(n,f,subs) :
+				if( !isAllowedPlatformPackage( f ) )
+					continue;
+				if( compareStrings( f, term ) ) traverser_packages.push( tree );
 				searchTypes( subs  );
-			case TTypedecl(t) :
-				if( compareStrings( t.path, term ) ) traverser.push( tree );
-			case TEnumdecl(e) :
-				if( compareStrings( e.path, term ) ) traverser.push( tree );
-			case TClassdecl(c) :
-				if( compareStrings( c.path, term ) ) traverser.push( tree );
+			default :
+				addType( tree );
 			}
 		}
+	}
+	
+	function isAllowedPlatformPackage( n : String ) : Bool {
+		var i = n.indexOf(".");
+		if( i != -1 ) n = n.substr( 0, i );
+		for( p in platforms ) { if( p == n ) return true; }
+		return false;
+	}
+	
+	function addType( tree : TypeTree ) {
+		var t = TypeApi.typeInfos( tree );
+		var allowed = false;
+		for( tpf in t.platforms ) {
+			for( pf in platforms ) {
+				if( pf == tpf ) {
+					allowed = true;
+					break;
+				}
+			}
+			if( allowed ) break;
+		}
+		if( !allowed )
+			return;
+		if( compareStrings( t.path, term ) ) traverser.push( tree );
 	}
 	
 	inline function compareStrings( a : String, b : String ) : Bool {
@@ -92,13 +114,6 @@ class APISearch {
 		var nb = Type.enumParameters(b)[0].path.toLowerCase();
 		var i1 = na.indexOf( term );
 		var i2 = nb.indexOf( term );
-		/*
-		if( i1 == i2 ) {
-			return if( na.length > nb.length ) 1 else -1;
-		} else {
-			return if( i1 > i2 ) 1 else -1;
-		}
-		*/
 		return ( i1 == i2 ) ? ( ( na.length > nb.length ) ? 1 : -1 ) : ( ( i1 > i2 ) ? 1 : -1 );
 	}
 	
@@ -107,10 +122,10 @@ class APISearch {
 		var nb = Type.enumParameters(b)[1].toLowerCase();
 		var i1 = na.indexOf( term );
 		var i2 = nb.indexOf( term );
-		if( i1 == i2 ) {
-			return if( na.length > nb.length ) 1 else -1;
+		return if( i1 == i2 ) {
+			if( na.length > nb.length ) 1 else -1;
 		} else {
-			return if( i1 > i2 ) 1 else -1;
+			if( i1 > i2 ) 1 else -1;
 		}
 	}
 	

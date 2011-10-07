@@ -1,0 +1,10 @@
+
+-js api_generator.js
+-main dox.APIGenerator
+-cp ../hxnodejs
+-D nodejs
+
+#--next
+#-cp ../hx.html5
+#-js out/app.js
+#dox.App

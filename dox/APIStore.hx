@@ -2,13 +2,6 @@ package dox;
 
 import haxe.rtti.CType;
 
-/*
-typedef APIResult = {
-	var desc : APIDescription;
-	var content : String;
-}
-*/
-
 class APIStore {
 	
 	function new() {
@@ -17,15 +10,25 @@ class APIStore {
 	public function init( cb : Array<APIDescription>->Void ) {
 	}
 	
+	public function getAll( cb : Array<APIDescription>->Void ) {
+	}
+	
 	public function get( name : String, cb : APIDescription->Void ) {
 	}
 	
-	public function set( d : APIDescription, cb : String->Void ) {
+	public function set( api : APIDescription, cb : String->Void ) {
 	}
 	
-	public function clear( cb : String->Void ) {
+	/*
+	public function setActive( api : APIDescription, cb : String->Void ) {
 	}
+	public function setXml( api : APIDescription, cb : String->Void ) {
+	}
+	public function setRoot( api : APIDescription, cb : String->Void ) {
+	}
+	*/
 	
-	//function count( cb : Int->Void ) {
+	public function clear( ?cb : String->Void ) {
+	}
 	
 }
