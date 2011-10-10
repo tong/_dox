@@ -1,6 +1,7 @@
 package dox;
 
 import haxe.rtti.CType;
+using Lambda;
 
 class APISearch {
 	
@@ -15,9 +16,15 @@ class APISearch {
 		active = false;
 	}
 	
+	/**
+		@term The term to search for
+		@root The TypeRoot to search in
+		@platforms Active haXe platforms
+		@cb Callback method delivering the results
+	*/
 	public function run( term : String, root : TypeRoot, platforms : Array<String>, cb : TypeRoot->Void ) {
 		
-		trace( "Searching: '"+term+"' ..."+platforms );
+		//trace( "Searching: '"+term+"' ..."+platforms );
 		
 		this.term = term.toLowerCase();
 		this.platforms = platforms;
@@ -59,38 +66,21 @@ class APISearch {
 		for( tree in root ) {
 			switch( tree ) {
 			case TPackage(n,f,subs) :
-				if( !isAllowedPlatformPackage( f ) )
-					continue;
-				if( compareStrings( f, term ) ) traverser_packages.push( tree );
+				var n = f;
+				var i = f.indexOf(".");
+				if( i != -1 ) n = n.substr( 0, i );
+				if( platforms.has( n ) && compareStrings( f, term ) )
+					traverser_packages.push( tree );
 				searchTypes( subs  );
 			default :
-				addType( tree );
+				var t = TypeApi.typeInfos( tree );
+				for( p in t.platforms )
+					if( !platforms.has( p ) )
+						return;
+				if( compareStrings( t.path, term ) )
+					traverser.push( tree );
 			}
 		}
-	}
-	
-	function isAllowedPlatformPackage( n : String ) : Bool {
-		var i = n.indexOf(".");
-		if( i != -1 ) n = n.substr( 0, i );
-		for( p in platforms ) { if( p == n ) return true; }
-		return false;
-	}
-	
-	function addType( tree : TypeTree ) {
-		var t = TypeApi.typeInfos( tree );
-		var allowed = false;
-		for( tpf in t.platforms ) {
-			for( pf in platforms ) {
-				if( pf == tpf ) {
-					allowed = true;
-					break;
-				}
-			}
-			if( allowed ) break;
-		}
-		if( !allowed )
-			return;
-		if( compareStrings( t.path, term ) ) traverser.push( tree );
 	}
 	
 	inline function compareStrings( a : String, b : String ) : Bool {
@@ -100,11 +90,10 @@ class APISearch {
 	function sortTypeByAlphapbet( a : TypeTree, b : TypeTree ) : Int {
 		var na = Type.enumParameters(a)[0].path.toLowerCase();
 		var nb = Type.enumParameters(b)[0].path.toLowerCase();
-		var i = 0;
-		while( i < na.length && i < nb.length ) {
+		var l = ( na.length < nb.length ) ? na.length : nb.length;
+		for( i in 0...l ) {
 			if( na.charCodeAt(i) < nb.charCodeAt(i) )
 				return 1;
-			i++;
 		}
 		return -1;
 	}
