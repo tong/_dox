@@ -2,6 +2,7 @@ package dox;
 
 import haxe.rtti.CType;
 using Lambda;
+using StringTools;
 
 class APISearch {
 	
@@ -66,19 +67,22 @@ class APISearch {
 		for( tree in root ) {
 			switch( tree ) {
 			case TPackage(n,f,subs) :
-				var n = f;
-				var i = f.indexOf(".");
-				if( i != -1 ) n = n.substr( 0, i );
-				if( platforms.has( n ) && compareStrings( f, term ) )
+				if( f == term )
 					traverser_packages.push( tree );
 				searchTypes( subs  );
 			default :
 				var t = TypeApi.typeInfos( tree );
-				for( p in t.platforms )
-					if( !platforms.has( p ) )
-						return;
-				if( compareStrings( t.path, term ) )
-					traverser.push( tree );
+				if( compareStrings( t.path, term ) ) {
+					var allowed = false;
+					for( p in platforms ) {
+						if( t.platforms.has( p ) ) {
+							allowed = true;
+							break;
+						}
+					}
+					if( allowed )
+						traverser.push( tree );
+				}
 			}
 		}
 	}
