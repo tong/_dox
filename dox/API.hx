@@ -3,55 +3,56 @@ package dox;
 import haxe.rtti.CType;
 
 class API {
-	
-	public static inline var REMOTE_API_HOST =
+
+	public static inline var REMOTE_HOST = "https://raw.github.com/tong/dox/master/";
+	//public static inline var REMOTE_HOST = "https://disktree.net/";
+
+	/*
+	public static inline var REMOTE_HOST =
 		#if DEBUG
-		"http://192.168.0.110/dox.client//";	
+		"http://192.168.0.110/dox/";	
 		#else
-		//TODO
+		"https://raw.github.com/tong/dox/master/"
 		#end
-		
-	public var root(getRoot,null) : TypeRoot;
+	*/
 	
-	var store : APIStore;
+	public var root(getRoot,null) : TypeRoot;
+	public var store(default,null) : APIStore;
+	
 	var processor : dox.APIProcessor;
 	
 	public function new() {
 		processor = new dox.APIProcessor();
+		//TODO browser dependent
+		store = new APIStoreWDB();
 	}
 	
 	inline function getRoot() : TypeRoot return processor.root
 	
 	public function init( cb : String->Void ) {
-		store = new APIStoreWDB();
 		store.init(function(apis){
-			
-			//clearStore(); return;
-
-			trace( "API store ready ["+apis.length+"]" );
+//			clearStore(); return;
+			trace( "API store ready ("+apis.length+")" );
 			if( apis.length == 0 ) {
-				trace( "0 apis in database .. loading std from remote host" );
-				loadRemote( "std", REMOTE_API_HOST+"std", cb );
-			} else {
-				for( a in apis ) {
-					processor.mergeRoot( dox.APIJSONParser.parse( a.root ) );
-				}
+				cb( "0" );
+				return;
+			}
+			for( a in apis ) mergeString( a.root  );
+			cb( null );
+		});
+	}
+	
+	public function addAPI( d : APIDescription, cb : String->Void ) {
+		store.set( d, function(e){
+			if( e != null ) cb(e) else {
+				mergeString( d.root  );
 				cb( null );
 			}
 		});
 	}
 	
-	public function loadRemote( name : String, url : String, cb : String->Void ) {
-		var r = new haxe.Http( url );
-		r.onData = function(t){
-			store.set( { name : name, active : true, root : t }, function(e){
-				var loaded = dox.APIJSONParser.parse( t );
-				processor.mergeRoot( loaded );
-				cb( null );
-			});
-		}
-		r.onError = cb;
-		r.request( false );
+	public function mergeString( t : String ) {
+		processor.mergeRoot( dox.APIJSONParser.parse( t ) );
 	}
 	
 	public function clearStore( ?cb : String->Void ) {

@@ -7,13 +7,15 @@ using StringTools;
 class APISearch {
 	
 	public var active(default,null) : Bool;
+	public var searchPrivateTypes : Bool;
 	
 	var term : String;
 	var platforms : Array<String>;
 	var traverser_packages : Array<TypeTree>;
 	var traverser : Array<TypeTree>;
 	
-	public function new() {
+	public function new( searchPrivateTypes : Bool = false ) {
+		this.searchPrivateTypes = searchPrivateTypes;
 		active = false;
 	}
 	
@@ -72,6 +74,8 @@ class APISearch {
 				searchTypes( subs  );
 			default :
 				var t = TypeApi.typeInfos( tree );
+				if( !searchPrivateTypes && t.isPrivate ) // "_"
+					continue;
 				if( compareStrings( t.path, term ) ) {
 					var allowed = false;
 					for( p in platforms ) {

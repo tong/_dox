@@ -5,9 +5,19 @@ import haxe.rtti.CType;
 class APIJSONParser {
 	
 	public static function parse( t : String ) : TypeRoot {
+		//var stime = haxe.Timer.stamp();
 		var r : TypeRoot = JSON.parse( t );
+		//trace(haxe.Timer.stamp()-stime);
 		for( t in r ) prepareTree( t );
 		return r;
+		/*
+		var w = new Worker("js/worker/json.js");
+		w.onmessage = function(e){
+			trace(haxe.Timer.stamp()-stime);
+			cb(e.data);
+		}
+		w.postMessage( t );
+		*/
 	}
 	
 	static function prepareTree( tree : TypeTree ) {
@@ -32,12 +42,6 @@ class APIJSONParser {
 			if( c.tdynamic != null ) c.tdynamic = createType( c.tdynamic );
 			if( c.superClass != null ) c.superClass.params = createList( c.superClass.params );
 			repairFields( c, "statics" );
-			/*
-			for( f in c.statics ) {
-				f.type = createType( f.type );
-				f.platforms = createList( f.platforms );
-			}
-			*/
 			c.platforms = createList( c.platforms );
 			c.interfaces = createList( c.interfaces );
 			for( i in c.interfaces ) {
@@ -47,12 +51,6 @@ class APIJSONParser {
 				}
 			}
 			repairFields( c, "fields" );
-			/*
-			for( f in c.fields ) {
-				f.type = createType( f.type );
-				f.platforms = createList( f.platforms );
-			}
-			*/
 		}
 	}
 	
@@ -75,18 +73,9 @@ class APIJSONParser {
 		case 3 :
 			CTypedef( t[2], createTypeParams( t[3] ) );
 		case 4 :
-			/*
 			var args = createList( t[2] );
-			for( a in args ) a.t = createType( a.t );
-			trace(args);
-			CFunction( args, createType( t[3] ) );
-			*/
-			var args = createList( t[2] );
-			//trace(args);
-			for( a in args ) {
+			for( a in args )
 				a.t = createType( a.t );
-				//trace( a.t );
-			}
 			CFunction( args, createType( t[3] ) );
 			
 		case 5 :
@@ -115,44 +104,20 @@ class APIJSONParser {
 	}
 	
 	static function repairFields( c : Dynamic, field : String ) {
-		//trace( "repairFields" );
 		var l = createList( Reflect.field( c, field ) );
 		for( f in l ) {
-			
+			//
 			f.type = createType( f.type );
 			f.platforms = createList( f.platforms );
-			
-			//RIGHTS
-			/*
-		trace( Type.enumIndex( Rights.RNormal ) ); //0
-		trace( Type.enumIndex( Rights.RNo ) ); //1
-		trace( Type.enumIndex( Rights.RCall("23") ) ); //2
-		trace( Type.enumIndex( Rights.RMethod ) ); //3
-		trace( Type.enumIndex( Rights.RDynamic ) ); //4
-		trace( Type.enumIndex( Rights.RInline ) ); //5
-		trace( Type.createEnumIndex( Rights, 0 ) );
-		trace( Type.createEnumIndex( Rights, 1 ) );
-		trace( Type.createEnumIndex( Rights, 2, ["23"] ) );
-		trace( Type.createEnumIndex( Rights, 3 ) );
-		trace( Type.createEnumIndex( Rights, 4 ) );
-		trace( Type.createEnumIndex( Rights, 5 ) );
-			*/
-			
+			// RIGHTS
 			var i : Int = f.get[1];
 			if( i == 2 ) untyped f.get = Type.createEnumIndex( Rights, i, [f.get[2]] );
 			else untyped f.get = Type.createEnumIndex( Rights, i );
-			
 			i = f.set[1];
 			if( i == 2 ) untyped f.get = Type.createEnumIndex( Rights, i, [f.set[2]] );
 			else untyped f.set = Type.createEnumIndex( Rights, i );
 		}
-		//trace( l );
 		Reflect.setField( c, field, l );
-		//trace("<<<");
-		/*
-		var l = createList( Reflect.field( c, field ) );
-		Reflect.setField( c, field, l );
-		*/
 	}
 	
 }

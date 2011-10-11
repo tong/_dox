@@ -19,15 +19,6 @@ class APIStore {
 	public function set( api : APIDescription, cb : String->Void ) {
 	}
 	
-	/*
-	public function setActive( api : APIDescription, cb : String->Void ) {
-	}
-	public function setXml( api : APIDescription, cb : String->Void ) {
-	}
-	public function setRoot( api : APIDescription, cb : String->Void ) {
-	}
-	*/
-	
 	public function clear( ?cb : String->Void ) {
 	}
 	

@@ -16,7 +16,15 @@ class APILoader {
 	
 	public function load( required : Bool = false ) {
 		this.required = required;
-		_load();
+		if( untyped window.navigator.onLine )
+			_load();
+		else {
+			if( required ) {
+				//TODO
+			} else {
+				onFail( "not online" );
+			}
+		}
 	}
 	
 	function onHTTPSuccess( t ) {
@@ -24,9 +32,12 @@ class APILoader {
 	}
 	
 	function onHTTPError( e ) {
+		/*
+		trace(e);
 		if( required ) {
 			//TODO
 		}
+		*/
 		onFail(e);
 	}
 	

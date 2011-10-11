@@ -28,7 +28,7 @@ class APIGenerator {
 			var x = Xml.parse( Node.fs.readFileSync( "api/"+t+".xml", Node.UTF8 ) ).firstElement();
 			for( e in x.elements() ) {
 				//trace( e.get("path") );
-				if( t == "cpp" && e.get("path") == "haxe.Int32" ) {
+				if( t == "cpp" && e.get("path") == "haxe.Int32" ) { // HACK
 					x.removeChild( e );
 				}
 			}
