@@ -5,26 +5,20 @@ import haxe.rtti.CType;
 class API {
 
 	public static inline var REMOTE_HOST = "https://raw.github.com/tong/dox/master/";
-	//public static inline var REMOTE_HOST = "https://disktree.net/";
-
-	/*
-	public static inline var REMOTE_HOST =
-		#if DEBUG
-		"http://192.168.0.110/dox/";	
-		#else
-		"https://raw.github.com/tong/dox/master/"
-		#end
-	*/
 	
 	public var root(getRoot,null) : TypeRoot;
-	public var store(default,null) : APIStore;
+	public var store(default,null) : APIStore; // TODO remove !
 	
 	var processor : dox.APIProcessor;
 	
 	public function new() {
 		processor = new dox.APIProcessor();
 		//TODO browser dependent
+		#if chrome
 		store = new APIStoreWDB();
+		#elseif droid
+		store = new APIStoreFile();
+		#end
 	}
 	
 	inline function getRoot() : TypeRoot return processor.root
@@ -67,6 +61,33 @@ class API {
 	
 	public function getTopLevelPackage() : TypeTree {
 		return Type.createEnum( TypeTree, "TPackage", ["root","root",getTopLevel()] );
+	}
+	
+	// is this really required here ? ....->
+	
+	public inline function getType( path : String ) : Dynamic {
+		return _get( root, path );
+	}
+	
+	function _get( root : TypeRoot, path : String ) : Dynamic {
+		for( tree in root ) {
+			switch( tree ) {
+			case TPackage(n,f,subs) :
+				//if( f == path ) return tree;
+				var c = _get( subs, path );
+				if( c != null ) return c;
+			case TTypedecl(t) :
+				if( t.path == path ) return t;
+			case TEnumdecl(e) :
+				if( e.path == path ) return e;
+			case TClassdecl(c) :
+				//trace(c.path +" : "+ path);
+				if( c.path == path ) {
+					return c;
+				}
+			}
+		}
+		return null;
 	}
 	
 }

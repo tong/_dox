@@ -1,7 +1,13 @@
 package dox;
 
 import haxe.rtti.CType;
+#if cpp
+import hxjson2.JSON;
+#end
 
+/**
+	Reads a typetree from a json string
+*/
 class APIJSONParser {
 	
 	public static function parse( t : String ) : TypeRoot {
@@ -23,22 +29,18 @@ class APIJSONParser {
 	static function prepareTree( tree : TypeTree ) {
 		switch( tree ) {
 		case TPackage(n,f,s) :
-//			trace("--------------------------------- "+f );
 			for( t in s ) prepareTree( t );
 		case TTypedecl(t) :
-//			trace("------------------------------------ TTypedecl  "+t.path );
 			t.type = createType( t.type );
 			var types = new Hash<CType>();
 			for( f in Reflect.fields( untyped t.types.h ) ) types.set( f.substr(1), createType( Reflect.field( untyped t.types.h, f ) ) );
 			t.types = types;
 			t.platforms = createList( t.platforms );
 		case TEnumdecl(e) :
-//			trace("------------------------------------ TEnumdecl  "+e.path );
 			e.platforms = createList( e.platforms );
 			e.constructors = createList( e.constructors );
 			for( c in e.constructors ) c.platforms = createList( c.platforms );
 		case TClassdecl(c) :
-//			trace("------------------------------------ TClassdecl "+c.path );
 			if( c.tdynamic != null ) c.tdynamic = createType( c.tdynamic );
 			if( c.superClass != null ) c.superClass.params = createList( c.superClass.params );
 			repairFields( c, "statics" );
@@ -77,12 +79,10 @@ class APIJSONParser {
 			for( a in args )
 				a.t = createType( a.t );
 			CFunction( args, createType( t[3] ) );
-			
 		case 5 :
 			var l = createList( t[2] );
-			for( a in l ) {
+			for( a in l )
 				a.t = createType( a.t );
-			}
 			CAnonymous( l );
 		case 6 :
 			CDynamic( ( t.t != null ) ? createType( t.t ) : null );

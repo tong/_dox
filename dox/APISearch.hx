@@ -4,6 +4,9 @@ import haxe.rtti.CType;
 using Lambda;
 using StringTools;
 
+/**
+	Runs a search on the given type tree.
+*/
 class APISearch {
 	
 	public var active(default,null) : Bool;
@@ -14,6 +17,8 @@ class APISearch {
 	var traverser_packages : Array<TypeTree>;
 	var traverser : Array<TypeTree>;
 	
+	/**
+	*/
 	public function new( searchPrivateTypes : Bool = false ) {
 		this.searchPrivateTypes = searchPrivateTypes;
 		active = false;
@@ -29,6 +34,9 @@ class APISearch {
 		
 		//trace( "Searching: '"+term+"' ..."+platforms );
 		
+		if( active )
+			abort();
+		
 		this.term = term.toLowerCase();
 		this.platforms = platforms;
 		
@@ -36,8 +44,10 @@ class APISearch {
 		traverser = new Array();
 		active = true;
 		
+		// run the search
 		searchTypes( root );
 		
+		// sort results
 		//traverser.sort( sortTypeByAlphapbet );
 		traverser.sort( sortTypeBySearchTermPosition );
 		traverser_packages.sort( sortPackageBySearchTermPosition );
@@ -59,6 +69,9 @@ class APISearch {
 		cb( r );
 	}
 	
+	/**
+		Aborts the current search.	
+	*/
 	public function abort() {
 		active = false;
 	}

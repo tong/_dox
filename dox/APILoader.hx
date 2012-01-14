@@ -1,7 +1,10 @@
 package dox;
 
-//TODO required
+//TODO required, later
 
+/**
+	API loader
+*/
 class APILoader {
 	
 	public dynamic function onSuccess( t : String ) {}

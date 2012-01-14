@@ -2,6 +2,9 @@ package dox;
 
 import haxe.rtti.CType;
 
+/**
+
+*/
 class APIProcessor {
 	
 	public var root : TypeRoot;

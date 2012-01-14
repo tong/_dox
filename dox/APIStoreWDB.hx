@@ -12,7 +12,7 @@ class APIStoreWDB extends APIStore {
 	}
 	
 	public override function init( cb : Array<APIDescription>->Void ) {
-		db = untyped window.openDatabase( "dox", dox.Lib.VERSION, "DoX API database", 20*1024*1024 );	
+		db = untyped window.openDatabase( "dox", dox.Lib.VERSION, "DoX API database", 10*1024*1024 );	
 		if( db == null ) {
 			trace( 'failed to open database' );
 			cb( null );

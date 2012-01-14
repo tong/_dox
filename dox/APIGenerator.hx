@@ -3,6 +3,9 @@ package dox;
 import js.Node;
 import js.JSON;
 
+/**
+	Nodejs tool for generating dox files in json format
+*/
 class APIGenerator {
 	
 	static inline function print(t) js.Node.sys.print( t )
