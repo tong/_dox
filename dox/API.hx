@@ -17,7 +17,7 @@ class API {
 		#if chrome
 		store = new APIStoreWDB();
 		#elseif droid
-		store = new APIStoreFile();
+//		store = new APIStoreFile();
 		#end
 	}
 	
