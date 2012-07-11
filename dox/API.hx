@@ -2,6 +2,9 @@ package dox;
 
 import haxe.rtti.CType;
 
+/**
+ * 
+ */
 class API {
 
 	public static inline var REMOTE_HOST = "https://raw.github.com/tong/dox/master/";
